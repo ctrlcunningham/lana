@@ -1,0 +1,6 @@
+google-genai
+python-dotenv
+pillow
+rich
+requests
+markdownify
