@@ -6,6 +6,8 @@ from markdownify import markdownify as md
 from typing_extensions import TypedDict
 from datetime import datetime
 import requests
+import aiohttp
+import asyncio
 import subprocess
 
 class SearchResult(TypedDict):
@@ -15,7 +17,24 @@ class SearchResult(TypedDict):
   score: int
 
 
-def searxng(query: str) -> list[SearchResult]:
+# def legacy_searxng(query: str) -> list[SearchResult]:
+#   """
+#   searxng search tool. uses https://searx.xorydev.xyz/
+#   
+#   args:
+#     query: string containing search query
+#   returns: list of search results
+#   """
+#   print(f"[tool called] searxng: {query}")
+#   response = requests.post("https://searx.xorydev.xyz/search", params={ "format": "json", "q": query })
+#   json = response.json()
+#   return_object: list[SearchResult] = []
+#   for result in json["results"]:
+#     return_object.append({ "url": result["url"], "title": result["title"], "score": result["score"], "content": result["content"] })
+#   return_object.sort(key=lambda search_result: search_result["score"], reverse=True)
+#   return return_object
+
+async def searxng(query: str) -> list[SearchResult]:
   """
   searxng search tool. uses https://searx.xorydev.xyz/
   
@@ -24,26 +43,42 @@ def searxng(query: str) -> list[SearchResult]:
   returns: list of search results
   """
   print(f"[tool called] searxng: {query}")
-  response = requests.post("https://searx.xorydev.xyz/search", params={ "format": "json", "q": query })
-  json = response.json()
-  return_object: list[SearchResult] = []
-  for result in json["results"]:
-    return_object.append({ "url": result["url"], "title": result["title"], "score": result["score"], "content": result["content"] })
-  return_object.sort(key=lambda search_result: search_result["score"], reverse=True)
-  return return_object
 
-def open_url(url: str) -> str:
+  async with aiohttp.ClientSession() as session:
+    async with session.post("https://searx.xorydev.xyz/search", params={ "format": "json", "q": query }) as response:
+      json = await response.json()
+      return_object: list[SearchResult] = []
+      for result in json["results"]:
+        return_object.append({ "url": result["url"], "title": result["title"], "score": result["score"], "content": result["content"] })
+      return_object.sort(key=lambda search_result: search_result["score"], reverse=True)
+      return return_object
+
+# def open_url(url: str) -> str:
+#   """
+#   open a url. currently uses a get request.
+#   
+#   args:
+#     url: url
+#   returns: string containing the html parsed into markdown by markdownify
+#   """
+#   print(f"[tool called] open_url: {url}")
+#   return md(requests.get(url=url, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0"}).text)
+
+async def open_url(url: str) -> str:
   """
   open a url. currently uses a get request.
   
+  
   args:
-    url: url
+    url: url as a string
   returns: string containing the html parsed into markdown by markdownify
   """
-  print(f"[tool called] open_url: {url}")
-  return md(requests.get(url=url, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0"}).text)
+  async with aiohttp.ClientSession() as session:
+    async with session.get(url, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0"}) as response:
+      response_body = await response.text()
+      return response_body
 
-def shell_eval(command: str) -> tuple[int, str, str]: # TODO: containerise
+async def shell_eval(command: str) -> tuple[int, str, str]: # TODO: containerise
   """
   evaluate a shell command
   
@@ -62,7 +97,7 @@ def shell_eval(command: str) -> tuple[int, str, str]: # TODO: containerise
   stderr = command_output.stderr.decode("utf-8")
   return (return_code, stdout, stderr)
 
-def python_eval(code: str) -> tuple[int, str, str]: # TODO: containerise
+async def python_eval(code: str) -> tuple[int, str, str]: # TODO: containerise
   """
   evaluate python code. this function works by writing the code into a file and evaluating it using the python3 interpreter.
   thus, all output needs to be print()ed within the file's source code.
@@ -90,7 +125,7 @@ def python_eval(code: str) -> tuple[int, str, str]: # TODO: containerise
   stderr = command_output.stderr.decode("utf-8")
   return (return_code, stdout, stderr)
 
-def file_find_and_replace(file_path: str, find: str, replace: str):
+async def file_find_and_replace(file_path: str, find: str, replace: str):
   """
   find and replace a string within a file. 
   

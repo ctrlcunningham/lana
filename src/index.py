@@ -12,7 +12,7 @@ import os
 # env init
 load_dotenv()
 gem_client = genai.Client(api_key=os.getenv("GEM_API_KEY"))
-chat = gem_client.chats.create(
+chat = gem_client.aio.chats.create(
   model="gemini-3-flash-preview", 
   config=types.GenerateContentConfig(
     tools=[searxng, open_url, python_eval, shell_eval, file_find_and_replace], 
@@ -22,8 +22,8 @@ chat = gem_client.chats.create(
 )
 
 # abstracted generate function for expandability's sake
-def generate(prompt: str) -> str:
-  model_response = chat.send_message(prompt)
+async def generate(prompt: str) -> str:
+  model_response = await chat.send_message(prompt)
   response = model_response.text
 
   if not response:

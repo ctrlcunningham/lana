@@ -7,6 +7,8 @@ pkgs.mkShell {
       python-dotenv
       rich
       requests
+      aiohttp
+      aiodns
       markdownify
     ]))
   ];
