@@ -25,4 +25,4 @@ since this project is logged in flavourtown, i do need to disclose how i used ai
 - [x] switch to selenium
 - [ ] code execution in container so she doesn't `rm -rf` anything
 - [ ] discord integration because why not
-- [ ] tba
+- [ ] tbd
