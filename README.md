@@ -14,3 +14,14 @@ since this project is logged in flavourtown, i do need to disclose how i used ai
 - despite vscode's nagging, i did not touch agent mode
 - ai was only used for debugging and as a search engine
 - this project itself is merely a client for ai apis
+
+## roadmap
+
+- [x] basic gemini api interface
+- [x] conversation
+- [x] basic search tool calls
+- [ ] file manipulation and code execution tools (make these not suck)
+- [ ] improved sysprompt encouraging _heavy_ tool usage
+- [ ] switch to selenium
+- [ ] code execution in container so she doesn't `rm -rf` anything
+- [ ] tba
