@@ -1,6 +1,6 @@
-# Lana v0.0.1
-# A simple terminal-based client for the Gemini API
-# xorydev, licensed under WTFPL (technically OSS). See LICENSE.
+# lana v0.0.1 /// src/main.py
+# a simple terminal-based client for the gemini api
+# xorydev, licensed under wtfpl (technically OSS). See LICENSE.
 
 from google import genai
 from google.genai import types
@@ -12,18 +12,22 @@ import os
 # env init
 load_dotenv()
 gem_client = genai.Client(api_key=os.getenv("GEM_API_KEY"))
+chat = gem_client.chats.create(model="gemini-3-flash-preview", config=types.GenerateContentConfig(tools=[searxng, open_url], system_instruction=SYSTEM_PROMPT))
+
+# abstracted generate function for expandability's sake
+def generate(prompt: str) -> str:
+  model_response = chat.send_message(prompt)
+  response = model_response.text
+
+  if not response:
+    response = "(model returned no response)"
+  return response
 
 def main():
-  print(f"""Lana v0.0.1
+  print(f"""lana v0.0.1
 -----------""")
-  
-  # chat = gem_client.chats.create(model="gemini-3-flash-preview", config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, tools=[searxng, open_url]))
-  # while True:
-  #   response = chat.send_message_stream(input("[user] > "))
-  #   for chunk in response:
-  #     print(chunk.text, end="")
-  response = gem_client.models.generate_content(model="gemini-3-flash-preview", config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, tools=[searxng, open_url]), contents=input("[user] > "))
-  print(response.text)
+  while True:
+    print(generate(input("[user] > ")))
 
 if __name__ == "__main__":
   main()
