@@ -6,13 +6,20 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 from consts import SYSTEM_PROMPT
-from tools import searxng, open_url
+from tools import searxng, open_url, python_eval, shell_eval, file_find_and_replace
 import os
 
 # env init
 load_dotenv()
 gem_client = genai.Client(api_key=os.getenv("GEM_API_KEY"))
-chat = gem_client.chats.create(model="gemini-3-flash-preview", config=types.GenerateContentConfig(tools=[searxng, open_url], system_instruction=SYSTEM_PROMPT))
+chat = gem_client.chats.create(
+  model="gemini-3-flash-preview", 
+  config=types.GenerateContentConfig(
+    tools=[searxng, open_url, python_eval, shell_eval, file_find_and_replace], 
+    system_instruction=SYSTEM_PROMPT,
+    thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MEDIUM) # TODO user thinking level parameter + give _her_ the ability to control thinking level
+  ),
+)
 
 # abstracted generate function for expandability's sake
 def generate(prompt: str) -> str:
