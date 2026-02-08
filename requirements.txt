@@ -6,3 +6,5 @@ requests
 aiohttp
 aiodns
 markdownify
+selenium
+beautifulsoup

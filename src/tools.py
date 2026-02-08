@@ -5,34 +5,21 @@
 from markdownify import markdownify as md
 from typing_extensions import TypedDict
 from datetime import datetime
-import requests
+from bs4 import BeautifulSoup
+from selenium import webdriver
+# import requests
 import aiohttp
 import asyncio
 import subprocess
+
+driver = webdriver.Firefox()
+
 
 class SearchResult(TypedDict):
   url: str
   title: str
   content: str
   score: int
-
-
-# def legacy_searxng(query: str) -> list[SearchResult]:
-#   """
-#   searxng search tool. uses https://searx.xorydev.xyz/
-#   
-#   args:
-#     query: string containing search query
-#   returns: list of search results
-#   """
-#   print(f"[tool called] searxng: {query}")
-#   response = requests.post("https://searx.xorydev.xyz/search", params={ "format": "json", "q": query })
-#   json = response.json()
-#   return_object: list[SearchResult] = []
-#   for result in json["results"]:
-#     return_object.append({ "url": result["url"], "title": result["title"], "score": result["score"], "content": result["content"] })
-#   return_object.sort(key=lambda search_result: search_result["score"], reverse=True)
-#   return return_object
 
 async def searxng(query: str) -> list[SearchResult]:
   """
@@ -64,19 +51,64 @@ async def searxng(query: str) -> list[SearchResult]:
 #   print(f"[tool called] open_url: {url}")
 #   return md(requests.get(url=url, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0"}).text)
 
-async def open_url(url: str) -> str:
+
+async def sel_navigate(url: str):
   """
-  open a url. currently uses a get request.
+  navigate selenium to a url without getting the html at all
+
+  args:
+    url: url as a string
+  """
+  driver.get(url)
+
+async def sel_read_current_page_as_markdown() -> str:
+  """
+  get the contents of the page currently opened in selenium, parsed as markdown
   
+  
+  returns: string containing the html parsed into markdown by markdownify
+  """
+  page_source = driver.page_source
+  markdowned_page_source = md(page_source)
+  bs4_page_source = BeautifulSoup(page_source, "html.parser")
+  clickables = []
+  for element in bs4_page_source.find_all(["a", "button"]):
+    clickables.append(element)
+  return f"""
+{markdowned_page_source}
+
+{clickables}
+"""
+
+async def sel_read_current_page_as_raw_html() -> str:
+  """
+  get the contents of the page currently opened in selenium
+
+  returns: string containing the html
+  """
+  return driver.page_source
+
+async def sel_read_page_as_markdown(url: str) -> str:
+  """
+  navigate selenium to a url and get the page contents as markdown
   
   args:
     url: url as a string
   returns: string containing the html parsed into markdown by markdownify
   """
-  async with aiohttp.ClientSession() as session:
-    async with session.get(url, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0"}) as response:
-      response_body = await response.text()
-      return response_body
+  driver.get(url)
+  return await sel_read_current_page_as_markdown()
+
+async def sel_read_page_as_raw_html(url: str) -> str:
+  """
+  navigate selenium to a url and get the raw html of the page
+
+  args:
+    url: url as a string
+  returns: string containing the html
+  """
+  driver.get(url)
+  return await sel_read_current_page_as_raw_html()
 
 async def shell_eval(command: str) -> tuple[int, str, str]: # TODO: containerise
   """

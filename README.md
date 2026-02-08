@@ -22,7 +22,7 @@ since this project is logged in flavourtown, i do need to disclose how i used ai
 - [x] file manipulation and code execution tools (make these not suck)
 - [x] sysprompt encouraging _heavy_ tool usage
 - [x] asyncification
-- [ ] switch to selenium
+- [x] switch to selenium
 - [ ] code execution in container so she doesn't `rm -rf` anything
 - [ ] discord integration because why not
 - [ ] tba

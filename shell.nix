@@ -10,6 +10,10 @@ pkgs.mkShell {
       aiohttp
       aiodns
       markdownify
+      selenium
+      beautifulsoup4
     ]))
+    geckodriver
+    firefox
   ];
 }
