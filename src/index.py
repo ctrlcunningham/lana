@@ -52,8 +52,21 @@ async def generate(prompt: str | None) -> str:
       requested_tool = function_call.name
       match requested_tool:
         case "open_image":
-          image_name = "viewed_image.png"
-          bytes = open_image(**function_call.args)
+          bytes = await open_image(**function_call.args)
+
+          image_path = function_call.args["file_path"]
+          image_name = os.path.basename(image_path)
+          _, image_extension = os.path.splitext(image_name)
+          image_type = ""
+
+          match image_extension:
+            case ".png":
+              image_type = "image/png"
+            case ".jpg":
+              image_type = "image/jpeg"
+            case ".webp":
+              image_type = "image/webp"
+          
           tool_response_parts.append(
             types.Part.from_function_response(
               name = requested_tool,
@@ -62,7 +75,7 @@ async def generate(prompt: str | None) -> str:
               },
               parts = [types.FunctionResponsePart(
                   inline_data = types.FunctionResponseBlob(
-                    mime_type="image/png",
+                    mime_type=image_type,
                     data=bytes,
                   ),
               )]
@@ -80,7 +93,7 @@ async def generate(prompt: str | None) -> str:
             )
           )
         case "sel_navigate":
-          result = sel_navigate(**function_call.args)
+          result = await sel_navigate(**function_call.args)
           tool_response_parts.append(
             types.Part.from_function_response(
               name = requested_tool,
@@ -91,7 +104,7 @@ async def generate(prompt: str | None) -> str:
             )
           )
         case "sel_read_current_page_as_markdown":
-          result = sel_read_current_page_as_markdown(**function_call.args)
+          result = await sel_read_current_page_as_markdown(**function_call.args)
           tool_response_parts.append(
             types.Part.from_function_response(
               name = requested_tool,
@@ -102,7 +115,7 @@ async def generate(prompt: str | None) -> str:
             )
           )
         case "sel_read_current_page_as_raw_html":
-          result = sel_read_current_page_as_raw_html(**function_call.args)
+          result = await sel_read_current_page_as_raw_html(**function_call.args)
           tool_response_parts.append(
             types.Part.from_function_response(
               name = requested_tool,
@@ -113,7 +126,7 @@ async def generate(prompt: str | None) -> str:
             )
           )
         case "shell_eval":
-          result = shell_eval(**function_call.args)
+          result = await shell_eval(**function_call.args)
           tool_response_parts.append(
             types.Part.from_function_response(
               name = requested_tool,
@@ -124,7 +137,7 @@ async def generate(prompt: str | None) -> str:
             )
           )
         case "python_eval":
-          result = python_eval(**function_call.args)
+          result = await python_eval(**function_call.args)
           tool_response_parts.append(
             types.Part.from_function_response(
               name = requested_tool,
@@ -135,7 +148,7 @@ async def generate(prompt: str | None) -> str:
             )
           )
         case "file_find_and_replace":
-          result = file_find_and_replace(**function_call.args)
+          result = await file_find_and_replace(**function_call.args)
           tool_response_parts.append(
             types.Part.from_function_response(
               name = requested_tool,

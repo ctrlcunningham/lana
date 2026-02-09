@@ -72,7 +72,7 @@ searxng_config = types.Tool(function_declarations=[searxng_declaration]) # type:
 #   return md(requests.get(url=url, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0"}).text)
 
 
-def sel_navigate(url: str):
+async def sel_navigate(url: str):
   """
   navigate selenium to a url without getting the html at all
 
@@ -97,7 +97,7 @@ sel_navigate_declaration = types.FunctionDeclaration(
 )
 sel_navigate_config = types.Tool(function_declarations=[sel_navigate_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
 
-def sel_read_current_page_as_markdown() -> str:
+async def sel_read_current_page_as_markdown() -> str:
   """
   get the contents of the page currently opened in selenium, parsed as markdown
   
@@ -122,7 +122,7 @@ sel_read_current_page_as_markdown_declaration = types.FunctionDeclaration(
 )
 sel_read_current_page_as_markdown_config = types.Tool(function_declarations=[sel_read_current_page_as_markdown_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
 
-def sel_read_current_page_as_raw_html() -> str:
+async def sel_read_current_page_as_raw_html() -> str:
   """
   get the contents of the page currently opened in selenium
 
@@ -159,7 +159,7 @@ sel_read_current_page_as_raw_html_config = types.Tool(function_declarations=[sel
 #   driver.get(url)
 #   return await sel_read_current_page_as_raw_html()
 
-def shell_eval(command: str) -> tuple[int, str, str]: # TODO: containerise
+async def shell_eval(command: str) -> tuple[int, str, str]: # TODO: containerise
   """
   evaluate a shell command
   
@@ -195,7 +195,7 @@ shell_eval_declaration = types.FunctionDeclaration(
 shell_eval_config = types.Tool(function_declarations=[shell_eval_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
 
 
-def python_eval(code: str) -> tuple[int, str, str]: # TODO: containerise
+async def python_eval(code: str) -> tuple[int, str, str]: # TODO: containerise
   """
   evaluate python code. this function works by writing the code into a file and evaluating it using the python3 interpreter.
   thus, all output needs to be print()ed within the file's source code.
@@ -240,7 +240,7 @@ python_eval_declaration = types.FunctionDeclaration(
 python_eval_config = types.Tool(function_declarations=[python_eval_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
 
 
-def file_find_and_replace(file_path: str, find: str, replace: str):
+async def file_find_and_replace(file_path: str, find: str, replace: str):
   """
   find and replace a string within a file. 
   
@@ -284,7 +284,7 @@ file_find_and_replace_declaration = types.FunctionDeclaration(
 file_find_and_replace_config = types.Tool(function_declarations=[file_find_and_replace_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
 
 
-def open_image(file_path: str) -> bytes:
+async def open_image(file_path: str) -> bytes:
   """
   open a png image
 
