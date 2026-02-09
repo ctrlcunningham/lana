@@ -11,9 +11,7 @@ from selenium import webdriver
 from PIL import Image
 # import requests
 import aiohttp
-import asyncio
 import subprocess
-import os
 
 driver = webdriver.Firefox()
 
@@ -32,8 +30,6 @@ async def searxng(query: str) -> list[SearchResult]:
     query: string containing search query
   returns: list of search results
   """
-  print(f"[tool called] searxng: {query}")
-
   async with aiohttp.ClientSession() as session:
     async with session.post("https://searx.xorydev.xyz/search", params={ "format": "json", "q": query }) as response:
       json = await response.json()
@@ -43,22 +39,6 @@ async def searxng(query: str) -> list[SearchResult]:
       return_object.sort(key=lambda search_result: search_result["score"], reverse=True)
       return return_object
     
-
-searxng_declaration = types.FunctionDeclaration(
-  name="searxng",
-  description="searxng search tool. uses https://searx.xorydev.xyz/",
-  parameters={ 
-    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
-    "properties": {
-      "query": {
-        "type": "string",
-        "description": "string containing search query"
-      },
-    },
-    "required": ["query"]
-  },
-)
-searxng_config = types.Tool(function_declarations=[searxng_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
 
 # def open_url(url: str) -> str:
 #   """
@@ -81,22 +61,6 @@ async def sel_navigate(url: str):
   """
   driver.get(url)
 
-sel_navigate_declaration = types.FunctionDeclaration(
-  name="sel_navigate",
-  description="navigate selenium to a url without getting the html at all",
-  parameters={ 
-    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
-    "properties": {
-      "url": {
-        "type": "string",
-        "description": "url as a string"
-      },
-    },
-    "required": ["url"]
-  },
-)
-sel_navigate_config = types.Tool(function_declarations=[sel_navigate_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
-
 async def sel_read_current_page_as_markdown() -> str:
   """
   get the contents of the page currently opened in selenium, parsed as markdown
@@ -116,12 +80,6 @@ async def sel_read_current_page_as_markdown() -> str:
 {clickables}
 """
 
-sel_read_current_page_as_markdown_declaration = types.FunctionDeclaration(
-  name="sel_read_current_page_as_markdown",
-  description="get the contents of the page currently opened in selenium, parsed as markdown",
-)
-sel_read_current_page_as_markdown_config = types.Tool(function_declarations=[sel_read_current_page_as_markdown_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
-
 async def sel_read_current_page_as_raw_html() -> str:
   """
   get the contents of the page currently opened in selenium
@@ -129,12 +87,6 @@ async def sel_read_current_page_as_raw_html() -> str:
   returns: string containing the html
   """
   return driver.page_source
-
-sel_read_current_page_as_raw_html_declaration = types.FunctionDeclaration(
-  name="sel_read_current_page_as_raw_html",
-  description="get the raw html contents of the page currently opened in selenium",
-)
-sel_read_current_page_as_raw_html_config = types.Tool(function_declarations=[sel_read_current_page_as_raw_html_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
 
 
 # async def sel_read_page_as_markdown(url: str) -> str:
@@ -171,28 +123,11 @@ async def shell_eval(command: str) -> tuple[int, str, str]: # TODO: containerise
       2. stdout as str
       3. stderr as str
   """
-  print(f"[tool called] shell eval: {command}")
   command_output = subprocess.run(command, shell=True, capture_output=True)
   return_code = command_output.returncode
   stdout = command_output.stdout.decode("utf-8")
   stderr = command_output.stderr.decode("utf-8")
   return (return_code, stdout, stderr)
-
-shell_eval_declaration = types.FunctionDeclaration(
-  name="shell_eval",
-  description="evaluate a shell command",
-  parameters={ 
-    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
-    "properties": {
-      "command": {
-        "type": "string",
-        "description": "string containing the shell command"
-      },
-    },
-    "required": ["command"]
-  },
-)
-shell_eval_config = types.Tool(function_declarations=[shell_eval_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
 
 
 async def python_eval(code: str) -> tuple[int, str, str]: # TODO: containerise
@@ -208,12 +143,10 @@ async def python_eval(code: str) -> tuple[int, str, str]: # TODO: containerise
       2. stdout as str
       3. stderr as str
   """
-  print("[tool called] python eval: ", end="")
   timestamp = datetime.now().timestamp()
   file_path = f"/tmp/lana-eval-${timestamp}.py"
   with open(file_path, "w") as python_file:
     python_file.write(code)
-  print(file_path)
   
   command = f"python3 {file_path}"
   command_output = subprocess.run(command, shell=True, capture_output=True)
@@ -222,22 +155,6 @@ async def python_eval(code: str) -> tuple[int, str, str]: # TODO: containerise
   stdout = command_output.stdout.decode("utf-8")
   stderr = command_output.stderr.decode("utf-8")
   return (return_code, stdout, stderr)
-
-python_eval_declaration = types.FunctionDeclaration(
-  name="python_eval",
-  description="evaluate python code. this function works by writing the code into a file and evaluating it using the python3 interpreter. thus, all output needs to be print()ed within the file's source code.",
-  parameters={ 
-    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
-    "properties": {
-      "code": {
-        "type": "string",
-        "description": "string containing python code"
-      },
-    },
-    "required": ["code"]
-  },
-)
-python_eval_config = types.Tool(function_declarations=[python_eval_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
 
 
 async def file_find_and_replace(file_path: str, find: str, replace: str):
@@ -259,7 +176,89 @@ async def file_find_and_replace(file_path: str, find: str, replace: str):
   with open(file_path, "w") as file_write:
     file_write.write(file_as_string)
 
-file_find_and_replace_declaration = types.FunctionDeclaration(
+
+async def open_image(file_path: str) -> bytes:
+  """
+  open a png image
+
+  args:
+    path: string containing the file path
+  returns:
+    image bytes which are processed by the function caller
+  """
+
+  with open(file_path, "rb") as file:
+    bytes = file.read()
+
+  return bytes
+
+
+tools = [
+  types.Tool(function_declarations=[types.FunctionDeclaration(
+  name="searxng",
+  description="searxng search tool. uses https://searx.xorydev.xyz/",
+  parameters={ 
+    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "string containing search query"
+      },
+    },
+    "required": ["query"]
+  },
+)]),
+  types.Tool(function_declarations=[types.FunctionDeclaration(
+  name="sel_navigate",
+  description="navigate selenium to a url without getting the html at all",
+  parameters={ 
+    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
+    "properties": {
+      "url": {
+        "type": "string",
+        "description": "url as a string"
+      },
+    },
+    "required": ["url"]
+  },
+)]),
+  types.Tool(function_declarations=[types.FunctionDeclaration(
+  name="sel_read_current_page_as_markdown",
+  description="get the contents of the page currently opened in selenium, parsed as markdown",
+)]),
+  types.Tool(function_declarations=[types.FunctionDeclaration(
+  name="sel_read_current_page_as_raw_html",
+  description="get the raw html contents of the page currently opened in selenium",
+)]),
+  types.Tool(function_declarations=[types.FunctionDeclaration(
+  name="shell_eval",
+  description="evaluate a shell command",
+  parameters={ 
+    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
+    "properties": {
+      "command": {
+        "type": "string",
+        "description": "string containing the shell command"
+      },
+    },
+    "required": ["command"]
+  },
+)]),
+  types.Tool(function_declarations=[types.FunctionDeclaration(
+  name="python_eval",
+  description="evaluate python code. this function works by writing the code into a file and evaluating it using the python3 interpreter. thus, all output needs to be print()ed within the file's source code.",
+  parameters={ 
+    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
+    "properties": {
+      "code": {
+        "type": "string",
+        "description": "string containing python code"
+      },
+    },
+    "required": ["code"]
+  },
+)]),
+  types.Tool(function_declarations=[types.FunctionDeclaration(
   name="file_find_and_replace",
   description="find and replace a string within a file",
   parameters={ 
@@ -280,27 +279,8 @@ file_find_and_replace_declaration = types.FunctionDeclaration(
     },
     "required": ["file_path", "find", "replace"]
   },
-)
-file_find_and_replace_config = types.Tool(function_declarations=[file_find_and_replace_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
-
-
-async def open_image(file_path: str) -> bytes:
-  """
-  open a png image
-
-  args:
-    path: string containing the file path
-  returns:
-    image bytes which are processed by the function caller
-  """
-  print(f"[tool called] open file: {file_path}")
-
-  with open(file_path, "rb") as file:
-    bytes = file.read()
-
-  return bytes
-
-open_image_declaration = types.FunctionDeclaration(
+)]),
+  types.Tool(function_declarations=[types.FunctionDeclaration(
   name="open_image",
   description="open a png image",
   parameters={ 
@@ -313,5 +293,5 @@ open_image_declaration = types.FunctionDeclaration(
     },
     "required": ["file_path"]
   },
-)
-open_image_config = types.Tool(function_declarations=[open_image_declaration]) # type: ignore because the official docs themselves are invalid, according to vscode
+)]),
+]

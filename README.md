@@ -23,6 +23,6 @@ since this project is logged in flavourtown, i do need to disclose how i used ai
 - [x] sysprompt encouraging _heavy_ tool usage
 - [x] asyncification
 - [x] switch to selenium
-- [ ] multimodal inputs
+- [x] multimodal inputs
 - [ ] discord integration because why not
 - [ ] tbd

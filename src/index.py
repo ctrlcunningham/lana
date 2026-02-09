@@ -16,16 +16,18 @@ import base64
 load_dotenv()
 history = []
 gem_client = genai.Client(api_key=os.getenv("GEM_API_KEY"))
-tools = [
-  searxng_config,
-  sel_navigate_config,
-  sel_read_current_page_as_markdown_config,
-  sel_read_current_page_as_raw_html_config,
-  shell_eval_config,
-  python_eval_config,
-  file_find_and_replace_config,
-  open_image_config,
-]
+
+text_tool_map = {
+  "searxng": searxng,
+  "shell_eval": shell_eval,
+  "sel_navigate": sel_navigate,
+  "sel_read_current_page_as_markdown": sel_read_current_page_as_markdown,
+  "sel_read_current_page_as_raw_html": sel_read_current_page_as_raw_html,
+  "shell_eval": shell_eval,
+  "python_eval": python_eval,
+  "file_find_and_replace": file_find_and_replace,
+  "open_image": open_image,
+}
 
 # abstracted generate function for expandability's sake
 async def generate(prompt: str | None) -> str:
@@ -48,118 +50,50 @@ async def generate(prompt: str | None) -> str:
   tool_response_parts = []
   if model_response.function_calls:
     function_call = model_response.function_calls[0]
-    if function_call.args:
+    if function_call.args is not None:
       requested_tool = function_call.name
-      match requested_tool:
-        case "open_image":
-          bytes = await open_image(**function_call.args)
+      print(f"[tool called] {requested_tool} {function_call.args}")
+      if requested_tool == "open_image":
+        bytes = await open_image(**function_call.args)
+        image_path = function_call.args["file_path"]
+        image_name = os.path.basename(image_path)
+        _, image_extension = os.path.splitext(image_name)
+        image_type = ""
+        match image_extension:
+          case ".png":
+            image_type = "image/png"
+          case ".jpg":
+            image_type = "image/jpeg"
+          case ".webp":
+            image_type = "image/webp"
 
-          image_path = function_call.args["file_path"]
-          image_name = os.path.basename(image_path)
-          _, image_extension = os.path.splitext(image_name)
-          image_type = ""
-
-          match image_extension:
-            case ".png":
-              image_type = "image/png"
-            case ".jpg":
-              image_type = "image/jpeg"
-            case ".webp":
-              image_type = "image/webp"
-          
-          tool_response_parts.append(
-            types.Part.from_function_response(
-              name = requested_tool,
-              response = {
-                "status": "success",
-              },
-              parts = [types.FunctionResponsePart(
-                  inline_data = types.FunctionResponseBlob(
-                    mime_type=image_type,
-                    data=bytes,
-                  ),
-              )]
-            )
+        tool_response_parts.append(
+          types.Part.from_function_response(
+            name = requested_tool,
+            response = {
+              "status": "success",
+            },
+            parts = [types.FunctionResponsePart(
+                inline_data = types.FunctionResponseBlob(
+                  mime_type=image_type,
+                  data=bytes,
+                ),
+            )]
           )
-        case "searxng": # TODO do away with the boilerplate for text-based tools. perhaps a separate "text-tool-response" function?
-          result = await searxng(**function_call.args)
-          tool_response_parts.append(
-            types.Part.from_function_response(
-              name = requested_tool,
-              response = {
-                "status": "success",
-                "output": result
-              },
-            )
+        )
+      elif requested_tool in text_tool_map:
+        result = await text_tool_map[requested_tool](**function_call.args)
+        tool_response_parts.append(
+          types.Part.from_function_response(
+            name = requested_tool,
+            response = {
+              "status": "success",
+              "output": result
+            },
           )
-        case "sel_navigate":
-          result = await sel_navigate(**function_call.args)
-          tool_response_parts.append(
-            types.Part.from_function_response(
-              name = requested_tool,
-              response = {
-                "status": "success",
-                "output": result
-              },
-            )
-          )
-        case "sel_read_current_page_as_markdown":
-          result = await sel_read_current_page_as_markdown(**function_call.args)
-          tool_response_parts.append(
-            types.Part.from_function_response(
-              name = requested_tool,
-              response = {
-                "status": "success",
-                "output": result
-              },
-            )
-          )
-        case "sel_read_current_page_as_raw_html":
-          result = await sel_read_current_page_as_raw_html(**function_call.args)
-          tool_response_parts.append(
-            types.Part.from_function_response(
-              name = requested_tool,
-              response = {
-                "status": "success",
-                "output": result
-              },
-            )
-          )
-        case "shell_eval":
-          result = await shell_eval(**function_call.args)
-          tool_response_parts.append(
-            types.Part.from_function_response(
-              name = requested_tool,
-              response = {
-                "status": "success",
-                "output": result
-              },
-            )
-          )
-        case "python_eval":
-          result = await python_eval(**function_call.args)
-          tool_response_parts.append(
-            types.Part.from_function_response(
-              name = requested_tool,
-              response = {
-                "status": "success",
-                "output": result
-              },
-            )
-          )
-        case "file_find_and_replace":
-          result = await file_find_and_replace(**function_call.args)
-          tool_response_parts.append(
-            types.Part.from_function_response(
-              name = requested_tool,
-              response = {
-                "status": "success",
-                "output": result
-              },
-            )
-          )
-        case _:
-          result = json.dumps({"error": "unknown function"})
+        )
+      else:
+        result = json.dumps({"error": "unknown function"})
       
       history.append(
         types.Content(role="tool", parts=tool_response_parts)
