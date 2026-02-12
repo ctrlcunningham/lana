@@ -8,13 +8,14 @@ from typing_extensions import TypedDict
 from datetime import datetime
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from PIL import Image
+from selenium.webdriver.firefox.options import Options
 # import requests
 import aiohttp
 import subprocess
 
-driver = webdriver.Firefox()
-
+driver_options = Options()
+driver_options.add_argument("--headless")
+driver = webdriver.Firefox(options=driver_options)
 
 class SearchResult(TypedDict):
   url: str
@@ -295,3 +296,18 @@ tools = [
   },
 )]),
 ]
+
+text_tool_map = {
+  "searxng": searxng,
+  "shell_eval": shell_eval,
+  "sel_navigate": sel_navigate,
+  "sel_read_current_page_as_markdown": sel_read_current_page_as_markdown,
+  "sel_read_current_page_as_raw_html": sel_read_current_page_as_raw_html,
+  "shell_eval": shell_eval,
+  "python_eval": python_eval,
+  "file_find_and_replace": file_find_and_replace,
+}
+
+multimodal_tool_map = {
+  "open_image": open_image
+}
