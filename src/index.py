@@ -206,8 +206,15 @@ def get_user_attached_file() -> tuple[bytes, str]:
     return (file_data, file_type)
 
 def main():
-  console.print("[bold cyan]lana[/bold cyan]")
-  console.print("[dim]made by xorydev[/dim]")
+  print("""
+\033[1;35m   _               
+  //               
+ // __.  ____  __. 
+</_(_/|_/ / <_(_/|_ """, end="\033[0m")
+  console.print("""[cyan underline]a simple yet useful chatbot for the terminal[/cyan underline]
+[bold]press enter to add a newline, alt+enter to send[/bold]
+[pink]command list available with /help[/pink]""")
+
 
   attached_file: bytes | None = None
   attachment_file_name: str | None = None
@@ -278,6 +285,21 @@ def main():
           config_file_name_or_path = session.prompt("path or file name to load configuration from: ")
           config.load_from_file(config_file_name_or_path)
           continue
+        case "/help":
+          console.print("""[magenta bold underline]lana command help[/magenta bold underline]
+all commands are prexifed with a /""", end="")
+          console.print(Markdown("""
+- help: print this page
+- save: save chat
+- load: load chat
+- attach: attach a file to the next message
+- config: show current configuration
+- set model: set the model to use
+- set thinking_level: set the thinking level to use
+- set system_prompt: set the system prompt to use (loads from a file)
+- config save: save the current config to a file
+- config load: load the config from a file
+- quit: quit"""))
         case "/quit" | "/bye" | "/exit":
           exit(0)
         case _:
