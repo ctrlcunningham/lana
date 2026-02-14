@@ -5,12 +5,18 @@
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.shortcuts import PromptSession
+from prompt_toolkit.application import run_in_terminal
+from rich.console import Console
+from rich.markdown import Markdown
 from consts import DEFAULT_SYSTEM_PROMPT, extension_mime_type_map, thinking_level_map
 from tools import text_tool_map, multimodal_tool_map, tools
 import os
-import asyncio
 import json
+import base64
 import argparse
+import asyncio
 
 parser = argparse.ArgumentParser(
   prog="lana",
@@ -48,6 +54,10 @@ load_dotenv()
 args = parser.parse_args()
 history = []
 gem_client = genai.Client(api_key=os.getenv("GEM_API_KEY"))
+console = Console()
+bindings = KeyBindings()
+session = PromptSession(key_bindings=bindings)
+
 config = Config("gemini-3-flash-preview", types.ThinkingLevel.LOW, DEFAULT_SYSTEM_PROMPT)
 if args.config:
   config.load_from_file(args.config)
@@ -59,7 +69,6 @@ else:
     pass
 
 
-
 def get_user_defined_thinking_level() -> types.ThinkingLevel:
   if args.thinking_level and args.thinking_level in thinking_level_map:
     return thinking_level_map[args.thinking_level]
@@ -67,14 +76,13 @@ def get_user_defined_thinking_level() -> types.ThinkingLevel:
     return types.ThinkingLevel.LOW # the default is low since it's support by both flash and pro but doesn't waste resources
   
 
-# abstracted generate function for expandability's sake
+
 async def generate(prompt: str | None, file: bytes | None, file_mime_type: str | None) -> str:
   if prompt:
     if file and file_mime_type:
       history.append(types.Content(role="user", parts=[types.Part(text=prompt), types.Part.from_bytes(data=file, mime_type=file_mime_type)]))
     else:
       history.append(types.Content(role="user", parts=[types.Part(text=prompt)]))
-
   model_response = await gem_client.aio.models.generate_content(
     contents=history,
     model=config.model,
@@ -85,70 +93,96 @@ async def generate(prompt: str | None, file: bytes | None, file_mime_type: str |
     )
   )
   if not model_response:
-    return "(model returned no response)"
+    console.print("[red]model returned no response[/red]")
   
-  # we now use manual function calling because automatic doesn't support image returns.
-  tool_response_parts = []
-  if model_response.function_calls:
-    function_call = model_response.function_calls[0]
-    if function_call.args is not None:
-      requested_tool = function_call.name
-      print(f"[tool called] {requested_tool} {function_call.args}")
-      if requested_tool in multimodal_tool_map:
-        bytes = await multimodal_tool_map[requested_tool](**function_call.args)
-        file_path = function_call.args["file_path"]
-        file_name = os.path.basename(file_path)
-        _, file_extension = os.path.splitext(file_name)
-        file_type = ""
-        match file_extension:
-          case ".png":
-            file_type = "image/png"
-          case ".jpg":
-            file_type = "image/jpeg"
-          case ".webp":
-            file_type = "image/webp"
-
-        tool_response_parts.append(
-          types.Part.from_function_response(
-            name = requested_tool,
-            response = {
-              "status": "success",
-            },
-            parts = [types.FunctionResponsePart(
-                inline_data = types.FunctionResponseBlob(
-                  mime_type=file_type,
-                  data=bytes,
-                ),
-            )]
+  if model_response.candidates and model_response.candidates[0].content:
+    history.append(model_response.candidates[0].content)
+    tool_response_parts = []
+    if model_response.function_calls:
+      for function_call in model_response.function_calls:
+        if function_call.args is not None:
+          requested_tool = function_call.name
+          console.print(f"[tool called] {requested_tool} {function_call.args}")
+          if requested_tool in multimodal_tool_map:
+            bytes_data = await multimodal_tool_map[requested_tool](**function_call.args)
+            file_path = function_call.args["file_path"]
+            file_name = os.path.basename(file_path)
+            _, file_extension = os.path.splitext(file_name)
+            file_type = ""
+            match file_extension:
+              case ".png":
+                file_type = "image/png"
+              case ".jpg":
+                file_type = "image/jpeg"
+              case ".webp":
+                file_type = "image/webp"
+            tool_response_parts.append(
+              types.Part.from_function_response(
+                name = requested_tool,
+                response = {
+                  "status": "success",
+                },
+                # NOTE: double check if your SDK version supports 'parts' inside from_function_response
+                # usually the binary data goes into the response dict or a separate mechanism.
+                # assuming this part was working for you before:
+                parts = [types.FunctionResponsePart(
+                    inline_data = types.FunctionResponseBlob(
+                      mime_type=file_type,
+                      data=bytes_data,
+                    ),
+                )]
+              )
+            )
+          elif requested_tool in text_tool_map:
+            result = await text_tool_map[requested_tool](**function_call.args)
+            tool_response_parts.append(
+              types.Part.from_function_response(
+                name = requested_tool,
+                response = {
+                  "status": "success",
+                  "output": result
+                },
+            )
           )
-        )
-      elif requested_tool in text_tool_map:
-        result = await text_tool_map[requested_tool](**function_call.args)
-        tool_response_parts.append(
-          types.Part.from_function_response(
-            name = requested_tool,
-            response = {
-              "status": "success",
-              "output": result
-            },
+          else:
+            # handle unknown tools gracefully
+            if requested_tool:
+              tool_response_parts.append(
+                types.Part.from_function_response(
+                    name=requested_tool,
+                    response={"error": "unknown function"}
+                )
+              )
+          
+          history.append(
+            types.Content(role="tool", parts=tool_response_parts)
           )
-        )
-      else:
-        result = json.dumps({"error": "unknown function"})
-      
-      history.append(
-        types.Content(role="tool", parts=tool_response_parts)
-      )
 
-      return await generate(None, None, None) # call the function again, allowing the model to call multiple tools back-to-back
+          # recurse to let the model generate the final answer
+          return await generate(None, None, None)
   
   part_texts = []
-  for part in model_response.candidates[0].content.parts: # type: ignore
-    if part.text:
-      part_texts.append(part.text)
-  return "".join(part_texts)
+  if model_response.candidates:
+    if model_response.candidates[0].content:
+      if model_response.candidates[0].content.parts:
+        for part in model_response.candidates[0].content.parts:
+          if part.text:
+            part_texts.append(part.text)
+  response = "".join(part_texts)
+  if response.isspace():
+    return await generate(None, None, None)
+  else:
+    return response
 
     
+def serialise_history() -> str:
+  def _json_serializer(obj):
+    if isinstance(obj, bytes):
+      return base64.b64encode(obj).decode('utf-8')
+    raise TypeError(f"Type {type(obj)} not serializable")
+  
+  return json.dumps([c.model_dump() for c in history], default=_json_serializer, indent=2)
+
 def get_user_attached_file() -> tuple[bytes, str]:
   file_path = args.input_file
   _, file_extension = os.path.splitext(file_path)
@@ -158,35 +192,45 @@ def get_user_attached_file() -> tuple[bytes, str]:
     return (file_data, file_type)
 
 def main():
-  print(config.model)
-  print(config.thinking_level)
-  print(config.system_prompt)
+  console.print("[bold cyan]lana[/bold cyan]")
+  console.print("[dim]made by xorydev[/dim]")
 
-  if config.model != "gemini-3-flash-preview" and (config.thinking_level == types.ThinkingLevel.MINIMAL or config.thinking_level == types.ThinkingLevel.MEDIUM):
-    raise Exception("invalid argument: thinking levels minimal and medium are only available for gemini 3 flash")
+  attached_file: bytes | None = None
+  attachment_file_name: str | None = None
 
-  while True: # chat loop
-    is_first_prompt = True
-    print("-- enter user prompt (ctrl-d on an empty line to submit) --")
-    lines = []
-    while True: # we use a while loop for multi-line user input
-      line = ""
+  try:
+    while True:
+      text = session.prompt("> ", key_bindings=bindings, multiline=True)
+      match text:
+        case "/save":
+          file_name = session.prompt("enter filename to save current conversation as: ")
+          if file_name:
+            if not file_name.endswith(".json"):
+              file_name = f"{file_name}.json"
+            with open(file_name, "w") as file:
+              file.write(serialise_history())
+            console.print(f"[green]saved to {file_name}[/green]")
+          continue
+        case "/attach":
+          attachment_file_name = session.prompt("enter name or path of file to attach: ")
+          if attachment_file_name:
+            with open(attachment_file_name, "rb") as attachment_file:
+              attached_file = attachment_file.read()
+            console.print(f"[green]file {attachment_file_name} will be attached to next message")
+          continue
+        case _:
+          if attached_file and attachment_file_name:
+            _, attached_file_extension = os.path.splitext(attachment_file_name)
+            console.print(Markdown(asyncio.run(generate(text, attached_file, extension_mime_type_map[attached_file_extension]))))
+            
+            # clear attachments so we don't append them on the next message
+            attached_file = None
+            attachment_file_name = None
+          else:
+            console.print(Markdown(asyncio.run(generate(text, None, None))))
+  except (EOFError, KeyboardInterrupt):
+    console.print("bai")
 
-      try:
-        line = input()
-      except EOFError:
-        break
-      
-      lines.append(line)
-    print("-- end user prompt --\n[i] generating...")
-
-    if args.input_file and is_first_prompt:
-      file = get_user_attached_file()
-      model_response = asyncio.run(generate("\n".join(lines), file[0], file[1]))
-    else:
-      model_response = asyncio.run(generate("\n".join(lines), None, None))
-    
-    print(f"-- model response --\n\n{model_response}\n")
 
 if __name__ == "__main__":
   main()

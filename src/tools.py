@@ -145,7 +145,7 @@ async def python_eval(code: str) -> tuple[int, str, str]: # TODO: containerise
       3. stderr as str
   """
   timestamp = datetime.now().timestamp()
-  file_path = f"/tmp/lana-eval-${timestamp}.py"
+  file_path = f"/tmp/lana-eval-{timestamp}.py"
   with open(file_path, "w") as python_file:
     python_file.write(code)
   
@@ -247,7 +247,7 @@ tools = [
 )]),
   types.Tool(function_declarations=[types.FunctionDeclaration(
   name="python_eval",
-  description="evaluate python code. this function works by writing the code into a file and evaluating it using the python3 interpreter. thus, all output needs to be print()ed within the file's source code.",
+  description="evaluate python code. this function works by writing the code into a file and evaluating it using the python3 interpreter. thus, all output needs to be print()ed within the file's source code. it also cannot accept stdin.",
   parameters={ 
     "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
     "properties": {

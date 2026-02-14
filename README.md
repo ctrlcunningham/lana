@@ -28,13 +28,13 @@ i wanted aistudio in the terminal. but i kept going.
 
 - [x] multimodal inputs
 - [x] multi-line user prompts
-- [ ] user image/video/etc input
+- [x] user image/video/etc input
   - [x] argparse
   - [x] mime type detection
-  - [ ] inserting files into prompts after the first, TBD alongside UI improvements
+  - [x] inserting files into prompts after the first, TBD alongside UI improvements
 - [x] user-defined system prompt
 - [ ] improve ui and ux
-  - [ ] `rich` formatting
+  - [x] `rich` formatting
   - [ ] configuration/settings interface
   - [ ] saved chats interface
 - [ ] easy installation

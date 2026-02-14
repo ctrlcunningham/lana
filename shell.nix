@@ -6,6 +6,7 @@ pkgs.mkShell {
       pillow
       python-dotenv
       rich
+      prompt-toolkit
       requests
       aiohttp
       aiodns
