@@ -10,7 +10,7 @@ from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.application import run_in_terminal
 from rich.console import Console
 from rich.markdown import Markdown
-from consts import DEFAULT_SYSTEM_PROMPT, extension_mime_type_map, thinking_level_map
+from consts import DEFAULT_SYSTEM_PROMPT, extension_mime_type_map, thinking_level_map, reverse_thinking_level_map
 from tools import text_tool_map, multimodal_tool_map, tools
 import os
 import json
@@ -49,6 +49,16 @@ class Config:
     if args.thinking_level:
       self.thinking_level = get_user_defined_thinking_level()
 
+  def save_to_file(self, file_path):
+    config_dict = {
+      "default_model": self.model,
+      "default_thinking_level": reverse_thinking_level_map[self.thinking_level],
+      "system_prompt": self.system_prompt
+    }
+    if file_path:
+      with open(file_path, "w") as config_file:
+        config_file.write(json.dumps(config_dict))
+
 # env init
 load_dotenv()
 args = parser.parse_args()
@@ -84,7 +94,7 @@ async def generate(prompt: str | None, file: bytes | None, file_mime_type: str |
     else:
       history.append(types.Content(role="user", parts=[types.Part(text=prompt)]))
   model_response = await gem_client.aio.models.generate_content(
-    contents=history,
+    contents=history, # type: ignore
     model=config.model,
     config=types.GenerateContentConfig(
       tools=tools,
@@ -183,6 +193,10 @@ def serialise_history() -> str:
   
   return json.dumps([c.model_dump() for c in history], default=_json_serializer, indent=2)
 
+def deserialise_history(json_data: str):
+  global history
+  history = [types.Content.model_validate(c) for c in json.loads(json_data)]
+
 def get_user_attached_file() -> tuple[bytes, str]:
   file_path = args.input_file
   _, file_extension = os.path.splitext(file_path)
@@ -211,13 +225,61 @@ def main():
               file.write(serialise_history())
             console.print(f"[green]saved to {file_name}[/green]")
           continue
+        case "/load":
+          file_name = session.prompt("enter filename to load conversation from: ")
+          if file_name:
+            if not file_name.endswith(".json"):
+              file_name = f"{file_name}.json"
+            try:
+              with open(file_name, "r") as file:
+                deserialise_history(file.read())
+              console.print(f"[green]loaded history from {file_name}[/green]")
+            except Exception as e:
+              console.print(f"[red]failed to load history: {e}[/red]")
+          continue
         case "/attach":
           attachment_file_name = session.prompt("enter name or path of file to attach: ")
           if attachment_file_name:
             with open(attachment_file_name, "rb") as attachment_file:
               attached_file = attachment_file.read()
-            console.print(f"[green]file {attachment_file_name} will be attached to next message")
+            console.print(f"[green]file {attachment_file_name} will be attached to next message[/green]")
           continue
+        case "/set model":
+          new_model_name = session.prompt("enter new model name: ")
+          if new_model_name:
+            config.model = new_model_name
+            console.print(f"[green]will now use model {new_model_name}[/green]")
+        case "/set thinking_level":
+          new_thinking_level = session.prompt("enter new thinking level: ")
+          if new_thinking_level:
+            new_thinking_level_typed = thinking_level_map[new_thinking_level]
+            config.thinking_level = new_thinking_level_typed
+            console.print(f"[green]will now use thinking level {new_thinking_level}[/green]")
+          continue
+        case "/set system_prompt":
+          system_prompt_file_name_or_path = session.prompt("path or file name of text or markdown file to load new system prompt from: ")
+          if system_prompt_file_name_or_path:
+            if system_prompt_file_name_or_path == "DEFAULT":
+              config.system_prompt = DEFAULT_SYSTEM_PROMPT
+              continue
+            with open(system_prompt_file_name_or_path, "r") as system_prompt_file:
+              config.system_prompt = system_prompt_file.read()
+        case "/config":
+          console.print(Markdown(f"""
+**current configuration**
+- model: {config.model}
+- thinking level: {reverse_thinking_level_map[config.thinking_level]}
+"""))
+        case "/config save":
+          config_file_name_or_path = session.prompt("path or file name to save new configuration as: ")
+          config.save_to_file(config_file_name_or_path)
+          continue
+        case "/config load":
+          config_file_name_or_path = session.prompt("path or file name to load configuration from: ")
+          config.load_from_file(config_file_name_or_path)
+          continue
+        case "/quit" | "/bye" | "/exit":
+          exit(0)
         case _:
           if attached_file and attachment_file_name:
             _, attached_file_extension = os.path.splitext(attachment_file_name)

@@ -33,10 +33,10 @@ i wanted aistudio in the terminal. but i kept going.
   - [x] mime type detection
   - [x] inserting files into prompts after the first, TBD alongside UI improvements
 - [x] user-defined system prompt
-- [ ] improve ui and ux
+- [x] improve ui and ux
   - [x] `rich` formatting
-  - [ ] configuration/settings interface
-  - [ ] saved chats interface
+  - [x] configuration/settings interface
+  - [x] saved chats interface
 - [ ] easy installation
 - [ ] tba
 
@@ -48,16 +48,15 @@ i wanted aistudio in the terminal. but i kept going.
   - [ ] type text with css selector
   - [ ] take screenshot
   - [ ] scroll up/down(?)
-- [ ] persistent chats
-  - [ ] context-to-file serialisation
-  - [ ] file-to-context deserialisation
+- [x] persistent chats
+  - [x] context-to-file serialisation
+  - [x] file-to-context deserialisation
 - [ ] tba
 
 ### agentic functionality
 
-- [ ] autonomous thinking level control
 - [ ] persistence
-  - [ ] persistent chats, see "tools and data retrieval"
+  - [x] persistent chats, see "tools and data retrieval"
   - [ ] "notebooks"
     - basically just markdown files that contain certain kinds of info
     - similar to openclaw's SOUL.md, MEMORY.md, HEARTBEAT.md, etc.

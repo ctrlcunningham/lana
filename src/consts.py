@@ -58,3 +58,10 @@ thinking_level_map = {
   "medium": types.ThinkingLevel.MEDIUM,
   "high": types.ThinkingLevel.HIGH,
 }
+
+reverse_thinking_level_map = {
+  types.ThinkingLevel.MINIMAL: "minimal",
+  types.ThinkingLevel.LOW: "low",
+  types.ThinkingLevel.MEDIUM:"medium",
+  types.ThinkingLevel.HIGH: "high"
+}
