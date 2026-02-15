@@ -1,5 +1,4 @@
 # lana v0.0.1 /// src/main.py
-# a simple terminal-based client for the gemini api
 # xorydev, licensed under wtfpl (technically OSS). See LICENSE.
 
 from google import genai

@@ -1,5 +1,4 @@
 # lana v0.0.1 /// src/tools.py
-# a simple terminal-based client for the gemini api
 # xorydev, licensed under wtfpl (technically OSS). See LICENSE.
 
 from google.genai import types
@@ -8,6 +7,7 @@ from typing_extensions import TypedDict
 from datetime import datetime
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 # import requests
 import aiohttp
@@ -112,7 +112,20 @@ async def sel_read_current_page_as_raw_html() -> str:
 #   driver.get(url)
 #   return await sel_read_current_page_as_raw_html()
 
-async def shell_eval(command: str) -> tuple[int, str, str]: # TODO: containerise
+async def sel_click_on_element_with_css_selector(css_selector: str):
+  driver.find_element(By.CSS_SELECTOR, css_selector).click()
+
+async def sel_send_keys_by_css_selector(css_selector: str, keys: str):
+  driver.find_element(By.CSS_SELECTOR, css_selector).send_keys(keys)
+
+async def sel_screenshot() -> bytes:
+  timestamp = datetime.now().timestamp()
+  path = f"/tmp/lana-screenshot-${timestamp}.png"
+  driver.save_full_page_screenshot(path)
+  with open(path, "rb") as file:
+    return file.read()
+
+async def shell_eval(command: str) -> tuple[int, str, str]:
   """
   evaluate a shell command
   
@@ -231,6 +244,43 @@ tools = [
   name="sel_read_current_page_as_raw_html",
   description="get the raw html contents of the page currently opened in selenium",
 )]),
+types.Tool(function_declarations=[types.FunctionDeclaration(
+  name="sel_click_element_on_with_css_selector",
+  description="select an element by css selector and click on it",
+  parameters={
+    "type": "object", # type: ignore
+    "properties": {
+      "css_selector": {
+        "type": "string",
+        "description": "css selector"
+      },
+    },
+    "required": ["css_selector"]
+  } 
+)]),
+types.Tool(function_declarations=[types.FunctionDeclaration(
+  name="sel_send_keys_by_css_selector",
+  description="select an element by css selector and send keys to it",
+  parameters={
+    "type": "object", # type: ignore
+    "properties": {
+      "css_selector": {
+        "type": "string",
+        "description": "css selector"
+      },
+      "keys": {
+        "type": "string",
+        "description": "keys to send"
+      },
+      
+    },
+    "required": ["css_selector", "keys"]
+  } 
+)]),
+types.Tool(function_declarations=[types.FunctionDeclaration(
+  name="sel_save_screenshot",
+  description="take a full page screenshot"
+)]),
   types.Tool(function_declarations=[types.FunctionDeclaration(
   name="shell_eval",
   description="evaluate a shell command",
@@ -303,6 +353,9 @@ text_tool_map = {
   "sel_navigate": sel_navigate,
   "sel_read_current_page_as_markdown": sel_read_current_page_as_markdown,
   "sel_read_current_page_as_raw_html": sel_read_current_page_as_raw_html,
+  "sel_click_on_element_with_css_selector": sel_click_on_element_with_css_selector,
+  "sel_send_keys_by_css_selector": sel_send_keys_by_css_selector,
+  "sel_screenshot": sel_screenshot,
   "shell_eval": shell_eval,
   "python_eval": python_eval,
   "file_find_and_replace": file_find_and_replace,

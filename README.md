@@ -42,12 +42,11 @@ i wanted aistudio in the terminal. but i kept going.
 
 ### tools and data retrieval
 
-- [ ] selenium improvements
+- [x] selenium improvements
   - [x] switch to selenium headless
-  - [ ] click on element with css selector
-  - [ ] type text with css selector
-  - [ ] take screenshot
-  - [ ] scroll up/down(?)
+  - [x] click on element with css selector
+  - [x] type text with css selector
+  - [x] take screenshot
 - [x] persistent chats
   - [x] context-to-file serialisation
   - [x] file-to-context deserialisation
