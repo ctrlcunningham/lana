@@ -71,5 +71,5 @@ i wanted aistudio in the terminal. but i kept going.
 ### internal codebase
 
 - [x] tool-calling boilerplate cleanup
-- [ ] stronger typing
+- [x] stronger typing
 - [ ] tba

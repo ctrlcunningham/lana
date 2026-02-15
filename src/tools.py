@@ -211,8 +211,8 @@ tools = [
   types.Tool(function_declarations=[types.FunctionDeclaration(
   name="searxng",
   description="searxng search tool. uses https://searx.xorydev.xyz/",
-  parameters={ 
-    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
+  parameters={ # type: ignore
+    "type": "object", 
     "properties": {
       "query": {
         "type": "string",
@@ -225,8 +225,8 @@ tools = [
   types.Tool(function_declarations=[types.FunctionDeclaration(
   name="sel_navigate",
   description="navigate selenium to a url without getting the html at all",
-  parameters={ 
-    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
+  parameters={ # type: ignore 
+    "type": "object",
     "properties": {
       "url": {
         "type": "string",
@@ -247,8 +247,8 @@ tools = [
 types.Tool(function_declarations=[types.FunctionDeclaration(
   name="sel_click_element_on_with_css_selector",
   description="select an element by css selector and click on it",
-  parameters={
-    "type": "object", # type: ignore
+  parameters={ # type: ignore
+    "type": "object",
     "properties": {
       "css_selector": {
         "type": "string",
@@ -261,8 +261,8 @@ types.Tool(function_declarations=[types.FunctionDeclaration(
 types.Tool(function_declarations=[types.FunctionDeclaration(
   name="sel_send_keys_by_css_selector",
   description="select an element by css selector and send keys to it",
-  parameters={
-    "type": "object", # type: ignore
+  parameters={ # type: ignore
+    "type": "object",
     "properties": {
       "css_selector": {
         "type": "string",
@@ -284,8 +284,8 @@ types.Tool(function_declarations=[types.FunctionDeclaration(
   types.Tool(function_declarations=[types.FunctionDeclaration(
   name="shell_eval",
   description="evaluate a shell command",
-  parameters={ 
-    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
+  parameters={ # type: ignore 
+    "type": "object",
     "properties": {
       "command": {
         "type": "string",
@@ -298,8 +298,8 @@ types.Tool(function_declarations=[types.FunctionDeclaration(
   types.Tool(function_declarations=[types.FunctionDeclaration(
   name="python_eval",
   description="evaluate python code. this function works by writing the code into a file and evaluating it using the python3 interpreter. thus, all output needs to be print()ed within the file's source code. it also cannot accept stdin.",
-  parameters={ 
-    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
+  parameters={ # type: ignore 
+    "type": "object",
     "properties": {
       "code": {
         "type": "string",
@@ -312,8 +312,8 @@ types.Tool(function_declarations=[types.FunctionDeclaration(
   types.Tool(function_declarations=[types.FunctionDeclaration(
   name="file_find_and_replace",
   description="find and replace a string within a file",
-  parameters={ 
-    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
+  parameters={ # type: ignore 
+    "type": "object",
     "properties": {
       "file_path": {
         "type": "string",
@@ -334,8 +334,8 @@ types.Tool(function_declarations=[types.FunctionDeclaration(
   types.Tool(function_declarations=[types.FunctionDeclaration(
   name="open_image",
   description="open a png image",
-  parameters={ 
-    "type": "object", # type: ignore because the official docs themselves are invalid, according to vscode
+  parameters={ # type: ignore 
+    "type": "object",
     "properties": {
       "file_path": {
         "type": "string",
@@ -345,7 +345,7 @@ types.Tool(function_declarations=[types.FunctionDeclaration(
     "required": ["file_path"]
   },
 )]),
-]
+] 
 
 text_tool_map = {
   "searxng": searxng,

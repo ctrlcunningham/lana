@@ -61,7 +61,7 @@ class Config:
 # env init
 load_dotenv()
 args = parser.parse_args()
-history = []
+history: list[types.ContentUnion] = []
 gem_client = genai.Client(api_key=os.getenv("GEM_API_KEY"))
 console = Console()
 bindings = KeyBindings()
@@ -93,7 +93,7 @@ async def generate(prompt: str | None, file: bytes | None, file_mime_type: str |
     else:
       history.append(types.Content(role="user", parts=[types.Part(text=prompt)]))
   model_response = await gem_client.aio.models.generate_content(
-    contents=history, # type: ignore
+    contents=history,
     model=config.model,
     config=types.GenerateContentConfig(
       tools=tools,
@@ -190,7 +190,7 @@ def serialise_history() -> str:
       return base64.b64encode(obj).decode('utf-8')
     raise TypeError(f"Type {type(obj)} not serializable")
   
-  return json.dumps([c.model_dump() for c in history], default=_json_serializer, indent=2)
+  return json.dumps([c.model_dump() for c in history if isinstance(c, types.Content)], default=_json_serializer, indent=2)
 
 def deserialise_history(json_data: str):
   global history
@@ -229,7 +229,7 @@ def main():
               file_name = f"{file_name}.json"
             with open(file_name, "w") as file:
               file.write(serialise_history())
-            console.print(f"[green]saved to {file_name}[/green]")
+            console.print(f"[cyan]saved to {file_name}[/cyan]")
           continue
         case "/load":
           file_name = session.prompt("enter filename to load conversation from: ")
@@ -239,7 +239,7 @@ def main():
             try:
               with open(file_name, "r") as file:
                 deserialise_history(file.read())
-              console.print(f"[green]loaded history from {file_name}[/green]")
+              console.print(f"[cyan]loaded history from {file_name}[/cyan]")
             except Exception as e:
               console.print(f"[red]failed to load history: {e}[/red]")
           continue
@@ -248,19 +248,19 @@ def main():
           if attachment_file_name:
             with open(attachment_file_name, "rb") as attachment_file:
               attached_file = attachment_file.read()
-            console.print(f"[green]file {attachment_file_name} will be attached to next message[/green]")
+            console.print(f"[cyan]file {attachment_file_name} will be attached to next message[/cyan]")
           continue
         case "/set model":
           new_model_name = session.prompt("enter new model name: ")
           if new_model_name:
             config.model = new_model_name
-            console.print(f"[green]will now use model {new_model_name}[/green]")
+            console.print(f"[cyan]will now use model {new_model_name}[/cyan]")
         case "/set thinking_level":
           new_thinking_level = session.prompt("enter new thinking level: ")
           if new_thinking_level:
             new_thinking_level_typed = thinking_level_map[new_thinking_level]
             config.thinking_level = new_thinking_level_typed
-            console.print(f"[green]will now use thinking level {new_thinking_level}[/green]")
+            console.print(f"[cyan]will now use thinking level {new_thinking_level}[/cyan]")
           continue
         case "/set system_prompt":
           system_prompt_file_name_or_path = session.prompt("path or file name of text or markdown file to load new system prompt from: ")
