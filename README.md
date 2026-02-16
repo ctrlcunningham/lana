@@ -45,7 +45,7 @@ pip install lana_gemcli
   - [x] `rich` formatting
   - [x] configuration/settings interface
   - [x] saved chats interface
-- [ ] easy installation
+- [x] easy installation
 - [ ] tba
 
 ### tools and data retrieval
