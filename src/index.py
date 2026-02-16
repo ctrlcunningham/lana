@@ -3,7 +3,6 @@
 
 from google import genai
 from google.genai import types
-from dotenv import load_dotenv
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.application import run_in_terminal
@@ -11,6 +10,8 @@ from rich.console import Console
 from rich.markdown import Markdown
 from consts import DEFAULT_SYSTEM_PROMPT, extension_mime_type_map, thinking_level_map, reverse_thinking_level_map
 from tools import text_tool_map, multimodal_tool_map, tools
+from platformdirs import user_config_dir
+from pathlib import Path
 import os
 import json
 import base64
@@ -26,8 +27,11 @@ parser.add_argument("-t", "--thinking-level")
 parser.add_argument("-i", "--input-file")
 parser.add_argument("-c", "--config")
 
+# env init
+
 class Config:
-  def __init__(self, model: str, thinking_level: types.ThinkingLevel, system_prompt: str):
+  def __init__(self, api_key: str, model: str, thinking_level: types.ThinkingLevel, system_prompt: str):
+    self.api_key: str = api_key
     self.model: str = model
     self.thinking_level: types.ThinkingLevel = thinking_level
     self.system_prompt: str = system_prompt
@@ -39,6 +43,7 @@ class Config:
         config_file_text = config_file.read()
     config = json.loads(config_file_text)
 
+    self.api_key = config["api_key"]
     self.model = config["default_model"]
     self.thinking_level = thinking_level_map[config["default_thinking_level"]]
     self.system_prompt = config["system_prompt"]
@@ -50,6 +55,7 @@ class Config:
 
   def save_to_file(self, file_path):
     config_dict = {
+      "api_key": self.api_key,
       "default_model": self.model,
       "default_thinking_level": reverse_thinking_level_map[self.thinking_level],
       "system_prompt": self.system_prompt
@@ -58,24 +64,30 @@ class Config:
       with open(file_path, "w") as config_file:
         config_file.write(json.dumps(config_dict))
 
-# env init
-load_dotenv()
+
 args = parser.parse_args()
-history: list[types.ContentUnion] = []
-gem_client = genai.Client(api_key=os.getenv("GEM_API_KEY"))
+
+config_dir = user_config_dir("lana", "lana")
+config_path = Path(config_dir) / "config.json"
+config_path.parent.mkdir(parents=True, exist_ok=True)
+
 console = Console()
 bindings = KeyBindings()
 session = PromptSession(key_bindings=bindings)
 
-config = Config("gemini-3-flash-preview", types.ThinkingLevel.LOW, DEFAULT_SYSTEM_PROMPT)
+config = Config("", "gemini-3-flash-preview", types.ThinkingLevel.LOW, DEFAULT_SYSTEM_PROMPT)
 if args.config:
   config.load_from_file(args.config)
 else:
   try:
-    config.load_from_file("config.jsonc") # TODO dynamically load this file from the relevant program configuration storage directory, such as linux's XDG_CONFIG_HOME, depending on the user's operating system
+    config.load_from_file(config_path)
   except FileNotFoundError:
-    print("[!] you have not created a configuration file. using default values.") # TODO more precise instructions and/or automatically create default configuration
+    console.print("[red]you have not created a configuration file. using default values. use the config save command after setting your options to create one.[/red]")
+    console.print("[bold]a gemini api key is required to use this software. set a gemini api key using the set api_key command. you can create one over at https://ai.studio[/bold]")
+
     pass
+
+history: list[types.ContentUnion] = []
 
 
 def get_user_defined_thinking_level() -> types.ThinkingLevel:
@@ -83,10 +95,13 @@ def get_user_defined_thinking_level() -> types.ThinkingLevel:
     return thinking_level_map[args.thinking_level]
   else:
     return types.ThinkingLevel.LOW # the default is low since it's support by both flash and pro but doesn't waste resources
-  
 
 
 async def generate(prompt: str | None, file: bytes | None, file_mime_type: str | None) -> str:
+  if not config.api_key:
+    console.print("[bold red]a gemini api key has not been set. use the relevant set command to set one.[/bold red]")
+    return ""
+  gem_client = genai.Client(api_key=config.api_key) # client is created inside the generate function so that the user can use /set for the api key.
   if prompt:
     if file and file_mime_type:
       history.append(types.Content(role="user", parts=[types.Part(text=prompt), types.Part.from_bytes(data=file, mime_type=file_mime_type)]))
@@ -255,6 +270,11 @@ def main():
           if new_model_name:
             config.model = new_model_name
             console.print(f"[cyan]will now use model {new_model_name}[/cyan]")
+        case "/set api_key":
+          api_key = session.prompt("paste in new gemini api_key: ")
+          if api_key:
+            config.api_key = api_key
+            console.print(f"[cyan]api key updated[/cyan]")
         case "/set thinking_level":
           new_thinking_level = session.prompt("enter new thinking level: ")
           if new_thinking_level:
@@ -277,12 +297,10 @@ def main():
 - thinking level: {reverse_thinking_level_map[config.thinking_level]}
 """))
         case "/config save":
-          config_file_name_or_path = session.prompt("path or file name to save new configuration as: ")
-          config.save_to_file(config_file_name_or_path)
+          config.save_to_file(config_path)
           continue
-        case "/config load":
-          config_file_name_or_path = session.prompt("path or file name to load configuration from: ")
-          config.load_from_file(config_file_name_or_path)
+        case "/config reload":
+          config.load_from_file(config_path)
           continue
         case "/help":
           console.print("""[magenta bold underline]lana command help[/magenta bold underline]
@@ -293,11 +311,12 @@ all commands are prexifed with a /""", end="")
 - load: load chat
 - attach: attach a file to the next message
 - config: show current configuration
+- set api_key: set the api key to use
 - set model: set the model to use
 - set thinking_level: set the thinking level to use
 - set system_prompt: set the system prompt to use (loads from a file)
-- config save: save the current config to a file
-- config load: load the config from a file
+- config save: save config
+- config reload: reset config to what's currently on disk
 - quit: quit"""))
         case "/quit" | "/bye" | "/exit":
           exit(0)

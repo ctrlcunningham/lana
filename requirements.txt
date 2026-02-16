@@ -1,5 +1,4 @@
 google-genai
-python-dotenv
 pillow
 rich
 requests
@@ -9,3 +8,4 @@ aiodns
 markdownify
 selenium
 beautifulsoup
+platformdirs

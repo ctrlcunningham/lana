@@ -4,7 +4,6 @@ pkgs.mkShell {
     (pkgs.python314.withPackages (python-pkgs: with python314Packages; [
       google-genai
       pillow
-      python-dotenv
       rich
       prompt-toolkit
       requests
@@ -13,6 +12,7 @@ pkgs.mkShell {
       markdownify
       selenium
       beautifulsoup4
+      platformdirs
     ]))
     geckodriver
     firefox
