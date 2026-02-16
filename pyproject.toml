@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lana-gemcli"
+version = "1.0.1"
+description = "a simple yet useful cli for interacting with google gemini"
+readme = "README.md"
+license = { text = "WTFPL 2" }
+authors = [
+  {"name" = "xory", email = "xory@tutamail.com" }
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+  "Operating System :: OS Independent",
+]
+
+requires-python = ">=3.8"
+dependencies = [
+  "google-genai",
+  "pillow",
+  "rich",
+  "requests",
+  "prompt_toolkit",
+  "aiohttp",
+  "aiodns",
+  "markdownify",
+  "selenium",
+  "beautifulsoup4",
+  "platformdirs",
+]
+
+[project.scripts]
+lana = "lana_gemcli.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lana_gemcli"]
+
+[project.urls]
+Homepage = "https://github.com/ctrlcunningham/lana"

@@ -13,6 +13,8 @@ pkgs.mkShell {
       selenium
       beautifulsoup4
       platformdirs
+      build
+      twine
     ]))
     geckodriver
     firefox

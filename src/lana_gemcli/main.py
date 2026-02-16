@@ -1,5 +1,5 @@
-# lana v0.0.1 /// src/main.py
-# xorydev, licensed under wtfpl (technically OSS). See LICENSE.
+# lana v1.0.0 /// src/main.py
+# xorydev, licensed under AGPL 3. See LICENSE.
 
 from google import genai
 from google.genai import types
@@ -8,8 +8,8 @@ from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.application import run_in_terminal
 from rich.console import Console
 from rich.markdown import Markdown
-from consts import DEFAULT_SYSTEM_PROMPT, extension_mime_type_map, thinking_level_map, reverse_thinking_level_map
-from tools import text_tool_map, multimodal_tool_map, tools
+from .consts import DEFAULT_SYSTEM_PROMPT, extension_mime_type_map, thinking_level_map, reverse_thinking_level_map
+from .tools import text_tool_map, multimodal_tool_map, tools
 from platformdirs import user_config_dir
 from pathlib import Path
 import os
@@ -126,7 +126,8 @@ async def generate(prompt: str | None, file: bytes | None, file_mime_type: str |
       for function_call in model_response.function_calls:
         if function_call.args is not None:
           requested_tool = function_call.name
-          console.print(f"[tool called] {requested_tool} {function_call.args}")
+          # console.print(f"[tool called] {requested_tool} {function_call.args}")
+          console.print(f"[dim]- tool call: {requested_tool}[/dim]")
           if requested_tool in multimodal_tool_map:
             bytes_data = await multimodal_tool_map[requested_tool](**function_call.args)
             file_path = function_call.args["file_path"]

@@ -1,5 +1,5 @@
-# lana v0.0.1 /// src/consts.py
-# xorydev, licensed under wtfpl (technically OSS). See LICENSE.
+# lana v1.0.0 /// src/consts.py
+# xorydev, licensed under AGPL 3. See LICENSE.
 
 from google.genai import types
 

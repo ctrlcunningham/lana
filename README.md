@@ -1,16 +1,24 @@
 # lana
 
-a semi-agentic (potentially agentic soon) chatbot built around the terminal.
+a simple semi-agentic chatbot interface for gemini built around the terminal.
 
 ## context
 
 i wanted aistudio in the terminal. but i kept going.
 
-## ai usage
+## how ai was used during the creation of this project
 
 - used to help understand docs
 - used to implement a prototype solution to one complicated problem that i then studied/understood and replaced w/ my own solution
 - the project itself is merely a client for AI APIs
+
+## getting started
+
+this project is on pypi! you just have to install python and
+
+```
+pip install lana_gemcli
+```
 
 ## roadmap/to-do
 

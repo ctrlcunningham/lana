@@ -7,5 +7,5 @@ aiohttp
 aiodns
 markdownify
 selenium
-beautifulsoup
+beautifulsoup4
 platformdirs
