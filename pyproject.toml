@@ -7,7 +7,7 @@ name = "lana-gemcli"
 version = "1.0.2"
 description = "a simple yet useful cli for interacting with google gemini"
 readme = "README.md"
-license = { text = "WTFPL 2" }
+license = { text = "AGPLv3" }
 authors = [
   {"name" = "xory", email = "xory@tutamail.com" }
 ]
