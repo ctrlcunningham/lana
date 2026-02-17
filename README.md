@@ -14,6 +14,10 @@ i wanted aistudio in the terminal. but i kept going. after trimming out some fea
 
 ## getting started
 
+### usage reuirements
+
+to use this tool you need english literacy. also, ideally, you should use a paid api key because you _will_ get ratelimited _extremely quickly_ by google on free tier.
+
 ### installation
 
 this project is on pypi! you just have to install python and

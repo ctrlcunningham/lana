@@ -3,6 +3,7 @@
 
 from google import genai
 from google.genai import types
+from google.genai import errors
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.application import run_in_terminal
@@ -108,17 +109,26 @@ async def generate(prompt: str | None, file: bytes | None, file_mime_type: str |
       history.append(types.Content(role="user", parts=[types.Part(text=prompt), types.Part.from_bytes(data=file, mime_type=file_mime_type)]))
     else:
       history.append(types.Content(role="user", parts=[types.Part(text=prompt)]))
-  model_response = await gem_client.aio.models.generate_content(
-    contents=history,
-    model=config.model,
-    config=types.GenerateContentConfig(
-      tools=tools,
-      system_instruction=config.system_prompt,
-      thinking_config=types.ThinkingConfig(thinking_level=config.thinking_level)
+  model_response: types.GenerateContentResponse | None = None
+  try:
+    model_response = await gem_client.aio.models.generate_content(
+      contents=history,
+      model=config.model,
+      config=types.GenerateContentConfig(
+        tools=tools,
+        system_instruction=config.system_prompt,
+        thinking_config=types.ThinkingConfig(thinking_level=config.thinking_level)
+      )
     )
-  )
-  if not model_response:
+  except errors.ClientError as e:
+    if e.status == 429:
+      console.print("[red bold]got ratelimited by google gemini. this happens frequently when using free tier api keys. try again later[/red bold]")
+      return ""
+
+  
+  if model_response is None:
     console.print("[red]model returned no response[/red]")
+    return ""
   
   if model_response.candidates and model_response.candidates[0].content:
     history.append(model_response.candidates[0].content)
@@ -240,7 +250,7 @@ def main():
       text = session.prompt("> ", key_bindings=bindings, multiline=True)
       match text:
         case "/save":
-          file_name = session.prompt("enter filename to save current conversation as: ")
+          file_name = session.prompt("enter filename to save current conversation as: ").strip()
           if file_name:
             if not file_name.endswith(".json"):
               file_name = f"{file_name}.json"
@@ -249,7 +259,7 @@ def main():
             console.print(f"[cyan]saved to {file_name}[/cyan]")
           continue
         case "/load":
-          file_name = session.prompt("enter filename to load conversation from: ")
+          file_name = session.prompt("enter filename to load conversation from: ").strip()
           if file_name:
             if not file_name.endswith(".json"):
               file_name = f"{file_name}.json"
@@ -261,31 +271,31 @@ def main():
               console.print(f"[red]failed to load history: {e}[/red]")
           continue
         case "/attach":
-          attachment_file_name = session.prompt("enter name or path of file to attach: ")
+          attachment_file_name = session.prompt("enter name or path of file to attach: ").strip()
           if attachment_file_name:
             with open(attachment_file_name, "rb") as attachment_file:
               attached_file = attachment_file.read()
             console.print(f"[cyan]file {attachment_file_name} will be attached to next message[/cyan]")
           continue
         case "/set model":
-          new_model_name = session.prompt("enter new model name: ")
+          new_model_name = session.prompt("enter new model name: ").strip()
           if new_model_name:
             config.model = new_model_name
             console.print(f"[cyan]will now use model {new_model_name}[/cyan]")
         case "/set api_key":
-          api_key = session.prompt("paste in new gemini api_key: ")
+          api_key = session.prompt("paste in new gemini api_key: ").strip()
           if api_key:
             config.api_key = api_key
             console.print(f"[cyan]api key updated[/cyan]")
         case "/set thinking_level":
-          new_thinking_level = session.prompt("enter new thinking level: ")
+          new_thinking_level = session.prompt("enter new thinking level: ").strip()
           if new_thinking_level:
             new_thinking_level_typed = thinking_level_map[new_thinking_level]
             config.thinking_level = new_thinking_level_typed
             console.print(f"[cyan]will now use thinking level {new_thinking_level}[/cyan]")
           continue
         case "/set system_prompt":
-          system_prompt_file_name_or_path = session.prompt("path or file name of text or markdown file to load new system prompt from: ")
+          system_prompt_file_name_or_path = session.prompt("path or file name of text or markdown file to load new system prompt from: ").strip()
           if system_prompt_file_name_or_path:
             if system_prompt_file_name_or_path == "DEFAULT":
               config.system_prompt = DEFAULT_SYSTEM_PROMPT
