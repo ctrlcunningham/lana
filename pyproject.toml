@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lana-gemcli"
-version = "1.0.1"
+version = "1.0.2"
 description = "a simple yet useful cli for interacting with google gemini"
 readme = "README.md"
 license = { text = "WTFPL 2" }

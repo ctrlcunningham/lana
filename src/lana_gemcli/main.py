@@ -82,8 +82,9 @@ else:
   try:
     config.load_from_file(config_path)
   except FileNotFoundError:
-    console.print("[red]you have not created a configuration file. using default values. use the config save command after setting your options to create one.[/red]")
-    console.print("[bold]a gemini api key is required to use this software. set a gemini api key using the set api_key command. you can create one over at https://ai.studio[/bold]")
+    console.print("[red]you have not created a configuration file. using default values. use the [/red][blue]/config save[blue][red] command after setting your options to create one.[/red]")
+    console.print("[bold]a gemini api key is required to use this software. set a gemini api key using the [/bold][blue]/set api_key[/blue][bold] command. you can create one over at https://ai.studio[/bold]")
+    console.print("for more info on commands, consult [blue]/help[/blue].")
 
     pass
 
@@ -305,20 +306,20 @@ def main():
           continue
         case "/help":
           console.print("""[magenta bold underline]lana command help[/magenta bold underline]
-all commands are prexifed with a /""", end="")
+all commands are prexifed with a / and do not take any arguments when inferred. instead, they're given settings via user input.""", end="")
           console.print(Markdown("""
-- help: print this page
-- save: save chat
-- load: load chat
-- attach: attach a file to the next message
-- config: show current configuration
-- set api_key: set the api key to use
-- set model: set the model to use
-- set thinking_level: set the thinking level to use
-- set system_prompt: set the system prompt to use (loads from a file)
-- config save: save config
-- config reload: reset config to what's currently on disk
-- quit: quit"""))
+- /help: print this page
+- /save: save chat
+- /load: load chat
+- /attach: attach a file to the next message
+- /config: show current configuration
+- /set api_key: set the api key to use
+- /set model: set the model to use
+- /set thinking_level: set the thinking level to use
+- /set system_prompt: set the system prompt to use (loads from a file)
+- /config save: save config
+- /config reload: reset config to what's currently on disk
+- /quit: quit"""))
         case "/quit" | "/bye" | "/exit":
           exit(0)
         case _:
